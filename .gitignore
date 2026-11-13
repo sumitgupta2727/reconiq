@@ -1,0 +1,36 @@
+# Backend
+backend/target/
+*.class
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Secrets / local configuration
+.env
+.env.local
+*.pem
+*.key
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# Build / test output
+build/
+coverage/
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

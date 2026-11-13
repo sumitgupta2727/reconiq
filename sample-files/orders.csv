@@ -1,0 +1,6 @@
+order_id,customer_name,order_amount,order_date,gateway,status
+ORD1001,Aarav Sharma,1500.00,2026-06-01,Razorpay,PAID
+ORD1002,Diya Patel,1299.00,2026-06-01,Paytm,PAID
+ORD1003,Kabir Singh,2499.00,2026-06-01,Stripe,PAID
+ORD1007,Vihaan Nair,750.00,2026-06-01,Paytm,CREATED
+ORD1012,Nisha Gupta,640.00,2026-06-01,Razorpay,PAID

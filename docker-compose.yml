@@ -1,0 +1,25 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: reconiq-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-reconiq-root}
+      MYSQL_DATABASE: reconiq_db
+      MYSQL_USER: ${DB_USERNAME:-reconiq}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-reconiq}
+    ports:
+      - "3306:3306"
+    volumes:
+      - reconiq-mysql-data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/sample-data.sql:/docker-entrypoint-initdb.d/02-sample-data.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-reconiq-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  reconiq-mysql-data:

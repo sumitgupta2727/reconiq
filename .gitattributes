@@ -1,0 +1,11 @@
+# Normalise line endings in the repository; Git converts on checkout per OS.
+* text=auto eol=lf
+
+# Keep binary assets untouched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.pdf binary
