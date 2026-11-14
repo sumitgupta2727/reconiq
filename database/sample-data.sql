@@ -31,8 +31,8 @@ INSERT INTO users (id, employee_id, name, email, password, role, created_at) VAL
    '$2a$10$wcx4dAxmpPUnhs7VnTAJiusfglj4xDPdOncSGI9zPs.78pUoWyWJG', 'ADMIN', NOW() - INTERVAL 30 DAY);
 
 -- Upload batch --------------------------------------------------------
-INSERT INTO upload_batches (id, file_name, file_type, total_records, status, uploaded_by, uploaded_at) VALUES
-  (1, 'gateway_transactions_june.csv', 'CSV', 13, 'COMPLETED', 1, NOW() - INTERVAL 27 DAY);
+INSERT INTO upload_batches (id, file_name, file_type, data_type, total_records, imported_records, status, uploaded_by, uploaded_at) VALUES
+  (1, 'gateway_transactions_june.csv', 'CSV', 'GATEWAY', 13, 13, 'COMPLETED', 1, NOW() - INTERVAL 27 DAY);
 
 -- Internal orders -----------------------------------------------------
 INSERT INTO orders (order_id, customer_name, order_amount, order_date, gateway, status) VALUES

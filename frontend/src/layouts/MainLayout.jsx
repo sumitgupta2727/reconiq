@@ -18,7 +18,7 @@ const PAGE_META = {
   },
   "/upload": {
     title: "Upload data",
-    subtitle: "Import a payment gateway statement",
+    subtitle: "Import orders and gateway transaction CSVs",
   },
   "/reports": {
     title: "Reports",

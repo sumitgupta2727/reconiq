@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByOrderId(String orderId);
+
+    List<Order> findByOrderIdIn(Collection<String> orderIds);
 
     boolean existsByOrderId(String orderId);
 

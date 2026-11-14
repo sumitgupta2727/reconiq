@@ -28,11 +28,21 @@ public class UploadController {
         this.uploadService = uploadService;
     }
 
+    /** Gateway transaction statement (default upload type). */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadBatchResponse> upload(
             @RequestPart("file") MultipartFile file,
             @RequestParam(required = false) String uploadedBy) {
         UploadBatchResponse response = uploadService.upload(file, uploadedBy);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /** Internal orders file: new order_ids are created, existing ones are updated. */
+    @PostMapping(value = "/orders", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UploadBatchResponse> uploadOrders(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) String uploadedBy) {
+        UploadBatchResponse response = uploadService.uploadOrders(file, uploadedBy);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -48,9 +58,18 @@ public class UploadController {
 
     @GetMapping("/template")
     public ResponseEntity<byte[]> template() {
-        byte[] body = uploadService.csvTemplate().getBytes(StandardCharsets.UTF_8);
+        return csvDownload(uploadService.gatewayTemplate(), "reconiq-gateway-template.csv");
+    }
+
+    @GetMapping("/orders/template")
+    public ResponseEntity<byte[]> ordersTemplate() {
+        return csvDownload(uploadService.ordersTemplate(), "reconiq-orders-template.csv");
+    }
+
+    private ResponseEntity<byte[]> csvDownload(String csv, String fileName) {
+        byte[] body = csv.getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"reconiq-upload-template.csv\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .contentType(new MediaType("text", "csv"))
                 .body(body);
     }

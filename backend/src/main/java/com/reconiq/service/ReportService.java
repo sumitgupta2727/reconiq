@@ -58,19 +58,26 @@ public class ReportService {
 
     private final boolean emailEnabled;
     private final String defaultRecipient;
+    private final String mailUsername;
+    private final boolean emailConfigured;
 
     public ReportService(OrderRepository orderRepository,
                          TransactionRepository transactionRepository,
                          ReconciliationRepository reconciliationRepository,
                          ObjectProvider<JavaMailSender> mailSenderProvider,
                          @Value("${reconiq.report.email.enabled:false}") boolean emailEnabled,
-                         @Value("${reconiq.report.email.to:}") String defaultRecipient) {
+                         @Value("${reconiq.report.email.to:}") String defaultRecipient,
+                         @Value("${spring.mail.username:}") String mailUsername,
+                         @Value("${spring.mail.password:}") String mailPassword) {
         this.orderRepository = orderRepository;
         this.transactionRepository = transactionRepository;
         this.reconciliationRepository = reconciliationRepository;
         this.mailSenderProvider = mailSenderProvider;
         this.emailEnabled = emailEnabled;
         this.defaultRecipient = defaultRecipient;
+        this.mailUsername = mailUsername == null ? "" : mailUsername.trim();
+        this.emailConfigured = !this.mailUsername.isEmpty()
+                && mailPassword != null && !mailPassword.isBlank();
     }
 
     @Transactional(readOnly = true)
@@ -230,12 +237,17 @@ public class ReportService {
     public void emailReport(String to) {
         if (!emailEnabled) {
             throw new BadRequestException(
-                    "Email delivery is disabled. Set REPORT_EMAIL_ENABLED=true and configure SMTP to use it.");
+                    "Email delivery is disabled. Set REPORT_EMAIL_ENABLED=true to use it.");
+        }
+        if (!emailConfigured) {
+            throw new BadRequestException(
+                    "SMTP is not configured. Set MAIL_USER and MAIL_PASS (Gmail app password) "
+                            + "and restart the backend.");
         }
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
         if (mailSender == null) {
             throw new BadRequestException(
-                    "SMTP is not configured. Set SPRING_MAIL_HOST (and related properties) to send reports.");
+                    "SMTP is not configured. Set MAIL_USER and MAIL_PASS to send reports.");
         }
 
         String recipient = to == null || to.isBlank() ? defaultRecipient : to.trim();
@@ -248,11 +260,12 @@ public class ReportService {
 
         try {
             MimeMessageHelper message = new MimeMessageHelper(mailSender.createMimeMessage(), true, "UTF-8");
+            message.setFrom(mailUsername);
             message.setTo(recipient);
             message.setSubject("ReconIQ reconciliation report - " + LocalDate.now());
             message.setText(htmlSummary(summary), true);
             message.addAttachment("reconiq-report-" + LocalDateTime.now().format(FILE_STAMP) + ".pdf",
-                    new ByteArrayResource(pdf));
+                    new ByteArrayResource(pdf), "application/pdf");
             mailSender.send(message.getMimeMessage());
             log.info("Reconciliation report sent to {}", recipient);
         } catch (Exception ex) {
@@ -275,6 +288,14 @@ public class ReportService {
 
     public boolean isEmailEnabled() {
         return emailEnabled;
+    }
+
+    public boolean isEmailConfigured() {
+        return emailEnabled && emailConfigured;
+    }
+
+    public String getSenderAddress() {
+        return mailUsername;
     }
 
     public String getDefaultRecipient() {

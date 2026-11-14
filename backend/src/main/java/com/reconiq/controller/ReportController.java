@@ -3,6 +3,7 @@ package com.reconiq.controller;
 import com.reconiq.dto.EmailReportRequest;
 import com.reconiq.dto.ReportSummaryResponse;
 import com.reconiq.service.ReportService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,7 @@ public class ReportController {
     }
 
     @PostMapping("/email")
-    public Map<String, Object> email(@RequestBody(required = false) EmailReportRequest request) {
+    public Map<String, Object> email(@Valid @RequestBody(required = false) EmailReportRequest request) {
         String to = request == null ? null : request.to();
         reportService.emailReport(to);
         return Map.of(
@@ -57,6 +58,8 @@ public class ReportController {
     public Map<String, Object> emailConfig() {
         return Map.of(
                 "enabled", reportService.isEmailEnabled(),
+                "configured", reportService.isEmailConfigured(),
+                "from", reportService.getSenderAddress() == null ? "" : reportService.getSenderAddress(),
                 "defaultRecipient", reportService.getDefaultRecipient() == null
                         ? "" : reportService.getDefaultRecipient());
     }

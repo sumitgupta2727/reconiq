@@ -1,18 +1,38 @@
 import api from "./api.js";
 
+const uploadConfig = {
+  headers: { "Content-Type": "multipart/form-data" },
+  timeout: 120000,
+};
+
+function buildFormData(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return formData;
+}
+
+function progressHandler(onProgress) {
+  return (event) => {
+    if (!onProgress || !event.total) return;
+    onProgress(Math.round((event.loaded * 100) / event.total));
+  };
+}
+
 const uploadService = {
   async upload(file, uploadedBy, onProgress) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const { data } = await api.post("/uploads", formData, {
+    const { data } = await api.post("/uploads", buildFormData(file), {
+      ...uploadConfig,
       params: uploadedBy ? { uploadedBy } : undefined,
-      headers: { "Content-Type": "multipart/form-data" },
-      timeout: 120000,
-      onUploadProgress: (event) => {
-        if (!onProgress || !event.total) return;
-        onProgress(Math.round((event.loaded * 100) / event.total));
-      },
+      onUploadProgress: progressHandler(onProgress),
+    });
+    return data;
+  },
+
+  async uploadOrders(file, uploadedBy, onProgress) {
+    const { data } = await api.post("/uploads/orders", buildFormData(file), {
+      ...uploadConfig,
+      params: uploadedBy ? { uploadedBy } : undefined,
+      onUploadProgress: progressHandler(onProgress),
     });
     return data;
   },
@@ -27,9 +47,14 @@ const uploadService = {
     return data;
   },
 
-  async downloadTemplate() {
-    const response = await api.get("/uploads/template", { responseType: "blob" });
+  async downloadTemplate(type = "gateway") {
+    const path = type === "orders" ? "/uploads/orders/template" : "/uploads/template";
+    const response = await api.get(path, { responseType: "blob" });
     return response.data;
+  },
+
+  async downloadOrdersTemplate() {
+    return uploadService.downloadTemplate("orders");
   },
 };
 

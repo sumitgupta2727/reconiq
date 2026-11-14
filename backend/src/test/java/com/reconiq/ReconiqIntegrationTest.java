@@ -276,7 +276,7 @@ class ReconiqIntegrationTest {
                 .andExpect(jsonPath("$.status").value("PARTIAL"))
                 .andExpect(jsonPath("$.totalRecords").value(2))
                 .andExpect(jsonPath("$.importedRecords").value(2))
-                .andExpect(jsonPath("$.errorMessage").value(containsString("skipped")));
+                .andExpect(jsonPath("$.errorMessage").value(containsString("1 row(s) were skipped")));
 
         mockMvc.perform(get("/api/uploads").param("page", "0"))
                 .andExpect(status().isOk())
@@ -307,6 +307,72 @@ class ReconiqIntegrationTest {
 
         assertThat(template).contains("order_id,transaction_id,customer_name,gateway,"
                 + "transaction_amount,transaction_date,payment_status");
+    }
+
+    @Test
+    @DisplayName("Orders CSV upload updates existing rows and creates new ones")
+    void uploadOrdersUpserts() throws Exception {
+        String csv = """
+                order_id,customer_name,order_amount,order_date,gateway,status
+                ORD-MATCH,Aarav Sharma,123.45,2026-06-02,Razorpay,PAID
+                NEW-ORD,Nikhil Rao,321.00,2026-06-02,Paytm,CREATED
+                """;
+
+        mockMvc.perform(multipart("/api/uploads/orders")
+                        .file(csvFile("orders.csv", csv))
+                        .param("uploadedBy", "EMP001"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.fileName").value("orders.csv"))
+                .andExpect(jsonPath("$.dataType").value("ORDERS"))
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.totalRecords").value(2))
+                .andExpect(jsonPath("$.importedRecords").value(2))
+                .andExpect(jsonPath("$.uploadedBy").value("Priya Nair"));
+
+        Order updated = orderRepository.findByOrderId("ORD-MATCH").orElseThrow();
+        assertThat(updated.getOrderAmount()).isEqualByComparingTo("123.45");
+        assertThat(updated.getOrderDate()).hasToString("2026-06-02");
+
+        Order created = orderRepository.findByOrderId("NEW-ORD").orElseThrow();
+        assertThat(created.getCustomerName()).isEqualTo("Nikhil Rao");
+        assertThat(created.getStatus()).isEqualTo(OrderStatus.CREATED);
+        assertThat(orderRepository.count()).isEqualTo(7);
+
+        mockMvc.perform(get("/api/uploads"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].dataType").value("ORDERS"));
+    }
+
+    @Test
+    @DisplayName("Orders CSV upload rejects duplicate order ids within one file")
+    void uploadOrdersRejectsDuplicateIds() throws Exception {
+        String csv = """
+                order_id,customer_name,order_amount,order_date,gateway,status
+                DUP-1,Neha Kapoor,500.00,2026-06-01,Razorpay,PAID
+                DUP-1,Neha Kapoor,600.00,2026-06-01,Razorpay,PAID
+                """;
+
+        mockMvc.perform(multipart("/api/uploads/orders").file(csvFile("duplicate.csv", csv)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PARTIAL"))
+                .andExpect(jsonPath("$.totalRecords").value(1))
+                .andExpect(jsonPath("$.importedRecords").value(1))
+                .andExpect(jsonPath("$.errorMessage").value(containsString("duplicated")));
+
+        Order saved = orderRepository.findByOrderId("DUP-1").orElseThrow();
+        assertThat(saved.getOrderAmount()).isEqualByComparingTo("500.00");
+    }
+
+    @Test
+    @DisplayName("Orders template is downloadable and matches the parser headers")
+    void ordersTemplate() throws Exception {
+        String template = mockMvc.perform(get("/api/uploads/orders/template"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("orders-template")))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(template).contains("order_id,customer_name,order_amount,order_date,gateway,status");
     }
 
     private static MockMultipartFile csvFile(String name, String content) {

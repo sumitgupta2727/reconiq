@@ -27,6 +27,11 @@ public class UploadBatch {
         FAILED
     }
 
+    public enum DataType {
+        ORDERS,
+        GATEWAY
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,8 +42,15 @@ public class UploadBatch {
     @Column(name = "file_type", nullable = false, length = 10)
     private String fileType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "data_type", nullable = false, length = 20)
+    private DataType dataType = DataType.GATEWAY;
+
     @Column(name = "total_records", nullable = false)
     private Integer totalRecords = 0;
+
+    @Column(name = "imported_records", nullable = false)
+    private Integer importedRecords = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -62,8 +74,14 @@ public class UploadBatch {
         if (status == null) {
             status = Status.PROCESSING;
         }
+        if (dataType == null) {
+            dataType = DataType.GATEWAY;
+        }
         if (totalRecords == null) {
             totalRecords = 0;
+        }
+        if (importedRecords == null) {
+            importedRecords = 0;
         }
     }
 
@@ -91,12 +109,28 @@ public class UploadBatch {
         this.fileType = fileType;
     }
 
+    public DataType getDataType() {
+        return dataType;
+    }
+
+    public void setDataType(DataType dataType) {
+        this.dataType = dataType;
+    }
+
     public Integer getTotalRecords() {
         return totalRecords;
     }
 
     public void setTotalRecords(Integer totalRecords) {
         this.totalRecords = totalRecords;
+    }
+
+    public Integer getImportedRecords() {
+        return importedRecords;
+    }
+
+    public void setImportedRecords(Integer importedRecords) {
+        this.importedRecords = importedRecords;
     }
 
     public Status getStatus() {

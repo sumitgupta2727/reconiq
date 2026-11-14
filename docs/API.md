@@ -108,19 +108,47 @@ Create/update body:
 
 ## CSV upload
 
+Orders and gateway transactions are uploaded separately, and every upload is stored as
+an auditable batch.
+
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/uploads` | Upload a gateway CSV (`multipart/form-data`). |
+| `POST` | `/uploads/orders` | Upload an orders CSV (create or update by `order_id`). |
 | `GET` | `/uploads` | Upload history, newest first. |
 | `GET` | `/uploads/{id}` | One batch with imported record count. |
-| `GET` | `/uploads/template` | Download a CSV template. |
+| `GET` | `/uploads/template` | Download the gateway CSV template. |
+| `GET` | `/uploads/orders/template` | Download the orders CSV template. |
 
-Multipart fields:
+Multipart fields for both upload endpoints:
 
 | Field | Required | Notes |
 | --- | --- | --- |
 | `file` | yes | `.csv`, up to `MAX_UPLOAD_SIZE` (default `10MB`). |
 | `uploadedBy` | no | Employee ID used to attribute the batch. |
+
+### Orders CSV (`POST /uploads/orders`)
+
+Accepted headers (aliases in brackets):
+
+```
+order_id [orderid, order_no, order_number, order],
+customer_name [customer, name],
+order_amount [amount, order_total, total, value],
+order_date [date, created_at],
+gateway [payment_gateway, provider],
+status [order_status, state]
+```
+
+`order_id`, `customer_name`, `order_amount` and `order_date` are required; `gateway`
+and `status` are optional (`status` defaults to `CREATED`). Statuses accept `PAID`,
+`CREATED`/`PENDING` and `CANCELLED` synonyms.
+
+Uploading is an upsert: new `order_id`s are created and existing ones are updated in
+place, so a corrected file can be re-uploaded safely. A duplicated `order_id` inside
+the same file is rejected as a row error rather than applied twice.
+
+### Gateway CSV (`POST /uploads`)
 
 Accepted headers (aliases in brackets):
 
@@ -143,13 +171,14 @@ Rows that fail validation are skipped and reported in `errorMessage`, while vali
 are imported. The batch status is then `PARTIAL` instead of `COMPLETED`; a completely
 unreadable file creates a `FAILED` batch and returns `400`.
 
-Response `201`:
+Response `201` (either upload type):
 
 ```json
 {
   "id": 7,
-  "fileName": "gateway-june.csv",
+  "fileName": "orders.csv",
   "fileType": "CSV",
+  "dataType": "ORDERS",
   "totalRecords": 2,
   "importedRecords": 2,
   "status": "COMPLETED",
@@ -158,6 +187,9 @@ Response `201`:
   "uploadedAt": "2026-06-01T10:15:30"
 }
 ```
+
+`dataType` is `ORDERS` or `GATEWAY`, allowing the frontend to keep both histories and
+templates separate.
 
 ## Reconciliation
 
@@ -211,7 +243,7 @@ Statuses and how they are produced:
 | `GET` | `/reports/export/csv` | UTF-8 CSV download (Excel BOM included). |
 | `GET` | `/reports/export/pdf` | PDF summary with the largest discrepancies. |
 | `POST` | `/reports/email` | Email the PDF report (requires SMTP configuration). |
-| `GET` | `/reports/email/config` | Whether email is enabled and the default recipient. |
+| `GET` | `/reports/email/config` | Whether email is enabled, configured, and the default recipient. |
 
 Summary response (abridged):
 
@@ -242,9 +274,17 @@ Email request (`to` is optional; the configured default recipient is used when o
 { "to": "finance@example.com" }
 ```
 
-Email is disabled by default. Set `REPORT_EMAIL_ENABLED=true` and the standard
-`SPRING_MAIL_*` properties to enable it. When disabled the endpoint returns `400` with a
-clear message.
+The message is HTML with the PDF attached as `reconiq-report-<timestamp>.pdf`
+(`application/pdf`). Configure a sender with `MAIL_USER` and `MAIL_PASS`; Gmail is the
+default host (`smtp.gmail.com:587`). Gmail requires an app password, not the normal
+account password. `GET /reports/email/config` returns:
+
+```json
+{ "enabled": true, "configured": true, "from": "you@gmail.com", "defaultRecipient": "finance@example.com" }
+```
+
+When `configured` is `false` the UI shows a setup hint and the endpoint returns `400`
+with a message explaining which variables are missing.
 
 ## Pagination envelope
 

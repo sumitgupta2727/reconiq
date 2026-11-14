@@ -16,11 +16,14 @@ duplicated, mismatched or stuck.
   gateway performance charts.
 - **Transactions** — search, filter by gateway/status/date, sortable columns and
   server-side pagination; add, edit and delete gateway records.
-- **CSV upload** — drag-and-drop gateway statements, tolerant header/date/status parsing,
-  row-level error reporting and a permanent upload history (batch tracking).
+- **CSV upload** — separate Orders and Gateway uploads with drag-and-drop, tolerant
+  header/date/status parsing, row-level error reporting and a permanent upload history
+  (batch tracking). Orders are upserted by `order_id`, so corrected files can be
+  re-uploaded safely.
 - **Reconciliation engine** — one click re-runs the whole matching process and reports
   matched amounts, discrepancies and duration.
-- **Reports** — CSV export, a formatted PDF report, and optional PDF email delivery.
+- **Reports** — CSV export, a formatted PDF report, and PDF email delivery through Gmail
+  or any SMTP server.
 - **Demo login** — BCrypt-verified credentials seeded on first start.
 
 ## Reconciliation rules
@@ -118,9 +121,27 @@ All backend settings are environment variables with safe defaults (see
 | `SEED_ENABLED` | `true` | Create the demo account. |
 | `SEED_DEMO_DATA` | `true` | Seed sample orders/transactions when empty. |
 | `SEED_ADMIN_EMPLOYEE_ID` / `SEED_ADMIN_PASSWORD` | `ADMIN001` / `admin123` | Demo credentials. |
-| `REPORT_EMAIL_ENABLED` | `false` | Enable report emails. |
+| `REPORT_EMAIL_ENABLED` | `true` | Enable PDF report emails. |
 | `REPORT_EMAIL_TO` | *(empty)* | Default recipient. |
-| `SPRING_MAIL_*` | – | Standard Spring Mail SMTP settings. |
+| `MAIL_USER` | *(empty)* | SMTP sender address (e.g. your Gmail address). |
+| `MAIL_PASS` | *(empty)* | SMTP app password. Never commit it. |
+| `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` | `smtp.gmail.com` / `587` | Optional SMTP override. |
+
+### Emailing the PDF report
+
+1. Create a Gmail **app password** at <https://myaccount.google.com/apppasswords>
+   (normal account passwords no longer work for SMTP).
+2. Start the backend with:
+   ```bash
+   MAIL_USER=you@gmail.com MAIL_PASS=your-16-char-app-password mvn spring-boot:run
+   ```
+3. Open **Reports**, enter a recipient and click **Send report**. The email contains the
+   same PDF as the export button plus an HTML summary in the body.
+4. The recipient can also be preset with `REPORT_EMAIL_TO`, and emails are sent
+   automatically after each reconciliation run when that variable is set.
+
+Until `MAIL_USER`/`MAIL_PASS` are set, the Reports page shows a configuration hint
+instead of the send form.
 
 Frontend: copy `frontend/.env.example` to `frontend/.env` and set
 `VITE_API_BASE_URL` (defaults to `http://localhost:8080/api`).
@@ -132,9 +153,10 @@ cd backend
 mvn test
 ```
 
-16 tests cover the reconciliation rules, the CSV parser and a full HTTP integration suite
-(login, run, filtered search, pagination, CSV/PDF export, valid/partial/invalid uploads)
-against MySQL-compatible H2.
+28 tests cover the reconciliation rules, both CSV parsers, a full HTTP integration suite
+(login, run, filtered search, pagination, CSV/PDF export, orders upsert, valid/partial/
+invalid uploads) and a hermetic SMTP test that asserts the emailed report really contains
+a PDF attachment.
 
 ```bash
 cd frontend
@@ -168,11 +190,14 @@ npm run build          # production build
 ## Try it in 60 seconds
 
 1. Sign in with `ADMIN001 / admin123`.
-2. Open **Upload** and upload `sample-files/gateway_transactions.csv`.
+2. Open **Upload**, choose **Orders** and upload `sample-files/orders.csv`.
+   Existing seeded orders are updated in place (upsert), so the file can be re-uploaded.
+3. Switch to **Gateway transactions** and upload
+   `sample-files/gateway_transactions.csv`.
    `gateway_transactions_with_errors.csv` demonstrates the partial-import path.
-3. Open **Reconciliation** and click **Run reconciliation**.
-4. Filter by `AMOUNT_MISMATCH` or `MISSING` to inspect the issues.
-5. Export the CSV/PDF from **Reports**.
+4. Open **Reconciliation** and click **Run reconciliation**.
+5. Filter by `AMOUNT_MISMATCH` or `MISSING` to inspect the issues.
+6. Export the CSV/PDF from **Reports**.
 
 ## Security notes
 

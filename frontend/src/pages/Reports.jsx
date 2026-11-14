@@ -86,7 +86,7 @@ export default function Reports() {
   const [csvBusy, setCsvBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
 
-  const [emailConfig, setEmailConfig] = useState({ enabled: false, defaultRecipient: "" });
+  const [emailConfig, setEmailConfig] = useState({ enabled: false, configured: false, from: "", defaultRecipient: "" });
   const [emailTo, setEmailTo] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailError, setEmailError] = useState("");
@@ -97,7 +97,7 @@ export default function Reports() {
     try {
       const [summaryData, config] = await Promise.all([
         reportService.summary(),
-        reportService.emailConfig().catch(() => ({ enabled: false, defaultRecipient: "" })),
+        reportService.emailConfig().catch(() => ({ enabled: false, configured: false, from: "", defaultRecipient: "" })),
       ]);
       setSummary(summaryData);
       setEmailConfig(config);
@@ -324,8 +324,17 @@ export default function Reports() {
             <div className="alert alert-info">
               <Mail size={16} />
               <span>
-                Email delivery is disabled. Set <code>REPORT_EMAIL_ENABLED=true</code> and the{" "}
-                <code>SPRING_MAIL_*</code> variables on the backend to enable it.
+                Email delivery is disabled. Set <code>REPORT_EMAIL_ENABLED=true</code> on the
+                backend to enable it.
+              </span>
+            </div>
+          ) : !emailConfig.configured ? (
+            <div className="alert alert-info">
+              <Mail size={16} />
+              <span>
+                SMTP is not configured yet. Set <code>MAIL_USER</code> (your Gmail address) and{" "}
+                <code>MAIL_PASS</code> (a Gmail app password) on the backend, then restart it
+                to send the PDF report by email.
               </span>
             </div>
           ) : (

@@ -8,6 +8,7 @@ public record UploadBatchResponse(
         Long id,
         String fileName,
         String fileType,
+        String dataType,
         Integer totalRecords,
         long importedRecords,
         String status,
@@ -15,13 +16,14 @@ public record UploadBatchResponse(
         String uploadedBy,
         LocalDateTime uploadedAt) {
 
-    public static UploadBatchResponse from(UploadBatch batch, long importedRecords) {
+    public static UploadBatchResponse from(UploadBatch batch) {
         return new UploadBatchResponse(
                 batch.getId(),
                 batch.getFileName(),
                 batch.getFileType(),
+                batch.getDataType() == null ? UploadBatch.DataType.GATEWAY.name() : batch.getDataType().name(),
                 batch.getTotalRecords(),
-                importedRecords,
+                batch.getImportedRecords() == null ? 0 : batch.getImportedRecords(),
                 batch.getStatus().name(),
                 batch.getErrorMessage(),
                 batch.getUploadedBy() == null ? null : batch.getUploadedBy().getName(),

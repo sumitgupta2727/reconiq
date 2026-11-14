@@ -53,7 +53,9 @@ CREATE TABLE upload_batches (
   id             BIGINT AUTO_INCREMENT PRIMARY KEY,
   file_name      VARCHAR(255) NOT NULL,
   file_type      VARCHAR(10)  NOT NULL,        -- CSV
+  data_type      VARCHAR(20)  NOT NULL DEFAULT 'GATEWAY',  -- ORDERS / GATEWAY
   total_records  INT          NOT NULL DEFAULT 0,
+  imported_records INT        NOT NULL DEFAULT 0,
   status         VARCHAR(20)  NOT NULL DEFAULT 'PROCESSING',  -- PROCESSING / COMPLETED / PARTIAL / FAILED
   error_message  VARCHAR(500) NULL,
   uploaded_by    BIGINT       NULL,

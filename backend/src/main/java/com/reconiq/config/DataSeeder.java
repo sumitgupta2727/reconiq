@@ -102,9 +102,11 @@ public class DataSeeder implements ApplicationRunner {
         UploadBatch batch = new UploadBatch();
         batch.setFileName("gateway_transactions_june.csv");
         batch.setFileType("CSV");
+        batch.setDataType(UploadBatch.DataType.GATEWAY);
         batch.setStatus(UploadBatch.Status.COMPLETED);
         batch.setUploadedBy(admin);
         batch.setTotalRecords(13);
+        batch.setImportedRecords(13);
         batch = uploadBatchRepository.save(batch);
 
         List<Order> orders = new ArrayList<>();
