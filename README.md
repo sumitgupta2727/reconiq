@@ -53,6 +53,9 @@ match, so a stray duplicate cannot hide the real payment.
 
 ## Quick start
 
+> On Windows? `RUN.md` has copy-paste PowerShell commands, including email setup,
+> MySQL, packaging and troubleshooting.
+
 ### Option A — zero setup (in-memory H2)
 
 Requires Java 17+ and Maven.
@@ -153,10 +156,10 @@ cd backend
 mvn test
 ```
 
-28 tests cover the reconciliation rules, both CSV parsers, a full HTTP integration suite
-(login, run, filtered search, pagination, CSV/PDF export, orders upsert, valid/partial/
-invalid uploads) and a hermetic SMTP test that asserts the emailed report really contains
-a PDF attachment.
+34 tests cover the reconciliation rules, both CSV parsers, a full HTTP integration suite
+(login, run, filtered search, pagination, CSV/PDF export, orders upsert and CRUD,
+valid/partial/invalid uploads) and a hermetic SMTP test that asserts the emailed report
+really contains a PDF attachment.
 
 ```bash
 cd frontend
