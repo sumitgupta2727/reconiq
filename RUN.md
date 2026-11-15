@@ -89,7 +89,7 @@ To recreate it from scratch:
 
 ```powershell
 $exe = "C:\Program Files\MySQL\MySQL Server 26.7\bin\mysql.exe"
-$env:MYSQL_PWD = "Sumit@835225"
+$env:MYSQL_PWD = "your_mysql_password"
 Get-Content database\schema.sql -Raw      | & $exe -u root
 Get-Content database\sample-data.sql -Raw | & $exe -u root reconiq_db
 ```
