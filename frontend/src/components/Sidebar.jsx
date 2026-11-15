@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  ClipboardList,
   FileText,
   GitCompare,
   LayoutDashboard,
@@ -13,6 +14,7 @@ import { initials } from "../utils/formatDate.js";
 
 const WORKSPACE_LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/orders", label: "Orders", icon: ClipboardList },
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/reconciliation", label: "Reconciliation", icon: GitCompare },
   { to: "/upload", label: "Upload data", icon: UploadCloud },

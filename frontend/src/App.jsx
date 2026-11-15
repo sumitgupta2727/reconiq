@@ -4,6 +4,7 @@ import MainLayout from "./layouts/MainLayout.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Login from "./pages/Login.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import Orders from "./pages/Orders.jsx";
 import Reconciliation from "./pages/Reconciliation.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
@@ -17,6 +18,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route index element={<Dashboard />} />
+          <Route path="orders" element={<Orders />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="upload" element={<UploadData />} />
           <Route path="reconciliation" element={<Reconciliation />} />

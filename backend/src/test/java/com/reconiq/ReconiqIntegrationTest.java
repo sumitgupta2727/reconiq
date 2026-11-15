@@ -31,9 +31,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -373,6 +375,73 @@ class ReconiqIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
         assertThat(template).contains("order_id,customer_name,order_amount,order_date,gateway,status");
+    }
+
+    @Test
+    @DisplayName("Orders can be searched, filtered, created, updated and deleted")
+    void ordersCrud() throws Exception {
+        mockMvc.perform(get("/api/orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(6))
+                .andExpect(jsonPath("$.content[0].orderId").value("ORD-MATCH"));
+
+        mockMvc.perform(get("/api/orders").param("search", "kabir"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].orderId").value("ORD-MISSING"));
+
+        mockMvc.perform(get("/api/orders").param("status", "PAID"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(6));
+
+        mockMvc.perform(get("/api/orders").param("gateway", "Paytm"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+
+        mockMvc.perform(get("/api/orders/gateways"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3));
+
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"orderId":"ORD-NEW","customerName":"Nikhil Rao","orderAmount":321.00,
+                                 "orderDate":"2026-06-05","gateway":"Paytm","status":"CREATED"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderId").value("ORD-NEW"))
+                .andExpect(jsonPath("$.status").value("CREATED"));
+
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"orderId":"ORD-NEW","customerName":"Nikhil Rao","orderAmount":321.00,
+                                 "orderDate":"2026-06-05","gateway":"Paytm","status":"CREATED"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("already exists")));
+
+        long createdId = orderRepository.findByOrderId("ORD-NEW").orElseThrow().getId();
+
+        mockMvc.perform(put("/api/orders/" + createdId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"orderId":"ORD-NEW","customerName":"Nikhil Rao","orderAmount":450.00,
+                                 "orderDate":"2026-06-06","gateway":"Stripe","status":"PAID"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderAmount").value(450.00))
+                .andExpect(jsonPath("$.status").value("PAID"));
+
+        mockMvc.perform(delete("/api/orders/" + createdId)).andExpect(status().isNoContent());
+        assertThat(orderRepository.findByOrderId("ORD-NEW")).isEmpty();
+
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"orderId":"","customerName":"","orderAmount":null,"orderDate":null}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     private static MockMultipartFile csvFile(String name, String content) {

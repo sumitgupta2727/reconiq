@@ -8,6 +8,10 @@ const PAGE_META = {
     title: "Dashboard",
     subtitle: "Reconciliation health at a glance",
   },
+  "/orders": {
+    title: "Orders",
+    subtitle: "Internal order records that gateway payments are matched against",
+  },
   "/transactions": {
     title: "Transactions",
     subtitle: "Gateway payments received and stored in ReconIQ",
