@@ -54,7 +54,8 @@ match, so a stray duplicate cannot hide the real payment.
 ## Quick start
 
 > On Windows? `RUN.md` has copy-paste PowerShell commands, including email setup,
-> MySQL, packaging and troubleshooting.
+> MySQL, packaging and troubleshooting. If `.env` is already filled in, just run
+> `.\run.ps1` and start the frontend.
 
 ### Option A — zero setup (in-memory H2)
 
@@ -62,7 +63,8 @@ Requires Java 17+ and Maven.
 
 ```bash
 cd backend
-mvn -Ph2 spring-boot:run -Dspring-boot.run.profiles=h2
+mvn -Ph2 -DskipTests package
+java -jar target/reconiq-backend-1.0.0.jar --spring.profiles.active=h2
 ```
 
 In a second terminal:
@@ -102,7 +104,8 @@ cd backend
 export DB_URL="jdbc:mysql://localhost:3306/reconiq_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata"
 export DB_USERNAME=reconiq
 export DB_PASSWORD=your-password
-mvn spring-boot:run
+mvn -DskipTests package
+java -jar target/reconiq-backend-1.0.0.jar
 ```
 
 The backend only ever **validates** the schema at startup (`ddl-auto=validate`); it never
@@ -111,7 +114,9 @@ modifies your tables. Start the frontend as in Option A.
 ## Configuration
 
 All backend settings are environment variables with safe defaults (see
-`backend/src/main/resources/application.properties` and `.env.example`):
+`backend/src/main/resources/application.properties` and `.env.example`).
+On Windows, `.\run.ps1` loads these from a git-ignored `.env` and starts the packaged jar
+(`-H2` for the demo profile, `-Rebuild` to repackage first).
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -136,14 +141,15 @@ All backend settings are environment variables with safe defaults (see
    (normal account passwords no longer work for SMTP).
 2. Start the backend with:
    ```bash
-   MAIL_USER=you@gmail.com MAIL_PASS=your-16-char-app-password mvn spring-boot:run
+   MAIL_USER=you@gmail.com MAIL_PASS=your-16-char-app-password \
+     java -jar target/reconiq-backend-1.0.0.jar
    ```
 3. Open **Reports**, enter a recipient and click **Send report**. The email contains the
    same PDF as the export button plus an HTML summary in the body.
 4. The recipient can also be preset with `REPORT_EMAIL_TO`, and emails are sent
    automatically after each reconciliation run when that variable is set.
 
-Until `MAIL_USER`/`MAIL_PASS` are set, the Reports page shows a configuration hint
+`MAIL_USER` / `MAIL_PASS` are set, the Reports page shows a configuration hint
 instead of the send form.
 
 Frontend: copy `frontend/.env.example` to `frontend/.env` and set
